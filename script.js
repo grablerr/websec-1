@@ -1,13 +1,31 @@
 const $ = document.querySelector.bind(document);
 
+function isLocalStorageAvailable() {
+  try {
+    const testKey = '__test__';
+    window.localStorage.setItem(testKey, 'test');
+    window.localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    console.warn('localStorage недоступен:', e.message);
+    return false;
+  }
+}
+
+const localStorageAvailable = isLocalStorageAvailable();
+
 document.addEventListener('DOMContentLoaded', () => {
-  const calculateButton = $('.calc-result');
+  const calculateButton = $('.button-calculate');
   if (calculateButton) {
     calculateButton.addEventListener('click', performCalculation);
   }
 
-  const savedResult = localStorage.getItem('previousResult');
-  const prevResultElement = $('.prev-result');
+  let savedResult = null;
+  if (localStorageAvailable) {
+    savedResult = localStorage.getItem('previousResult');
+  }
+
+  const prevResultElement = $('.result-previous');
 
   if (prevResultElement && savedResult) {
     prevResultElement.textContent = savedResult;
@@ -17,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function performCalculation() {
   const firstInput = $('#first-number');
   const secondInput = $('#second-number');
-  const operationSelect = $('.select-operation');
+  const operationSelect = $('.select-field-operation');
   
   if (!firstInput || !secondInput || !operationSelect) return;
   
@@ -32,13 +50,13 @@ function performCalculation() {
   const operations = {
     'add': { fn: (a, b) => a + b, symbol: '+' },
     'sub': { fn: (a, b) => a - b, symbol: '-' },
-    'mul': { fn: (a, b) => a * b, symbol: '∗' },
-    'div': { 
+    'mul': { fn: (a, b) => a * b, symbol: '×' },
+    'div': {
       fn: (a, b) => {
         if (b === 0) throw new Error('Деление на ноль!');
         return a / b;
       },
-      symbol: '/' 
+      symbol: '/'
     }
   };
 
@@ -49,13 +67,17 @@ function performCalculation() {
     const result = op.fn(firstNumber, secondNumber);
     const output = `${firstNumber} ${op.symbol} ${secondNumber} = ${result}`;
 
-    const currentResultElement = $('.current-result');
-    const prevResultElement = $('.prev-result');
+    const currentResultElement = $('.result-current');
+    const prevResultElement = $('.result-previous');
 
     if (currentResultElement && prevResultElement) {
-      if (currentResultElement.textContent) {
+      if (currentResultElement.textContent && localStorageAvailable) {
         prevResultElement.textContent = currentResultElement.textContent;
-        localStorage.setItem('previousResult', currentResultElement.textContent);
+        try {
+          localStorage.setItem('previousResult', currentResultElement.textContent);
+        } catch (e) {
+          console.error('Ошибка сохранения в localStorage:', e.message);
+        }
       }
       currentResultElement.textContent = output;
     }
